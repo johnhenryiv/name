@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages — FWB Connect</title>
+  <?!= include('styles') ?>
+  <style>
+    .inbox-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border: 1px solid transparent;
+    }
+    .inbox-item:hover, .inbox-item.selected {
+      background: rgba(108,99,255,0.1);
+      border-color: rgba(108,99,255,0.3);
+    }
+    .inbox-unread { font-weight: 700; }
+    .inbox-meta { flex: 1; min-width: 0; }
+    .inbox-name { font-weight: 600; }
+    .inbox-preview { font-size: 0.82rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .unread-dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; flex-shrink: 0; }
+    .messages-layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; min-height: 520px; }
+    @media (max-width: 640px) { .messages-layout { grid-template-columns: 1fr; } #conversationPanel { display: none; } }
+    .inbox-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .panel-header { padding: 16px; border-bottom: 1px solid var(--border); font-weight: 600; }
+    .inbox-list { overflow-y: auto; max-height: 500px; }
+    .conversation-panel { display: flex; flex-direction: column; }
+    .chat-header { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; padding: 14px 16px; font-weight: 600; border-bottom: 0; }
+    .chat-body { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-top: 0; padding: 0; }
+    .chat-footer { background: var(--bg-card); border: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); border-top: 1px solid var(--border); padding: 12px; }
+    .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+    .chat-input-row textarea { margin: 0; min-height: 44px; max-height: 120px; resize: none; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="?page=index">FWB Connect</a>
+  <div class="nav-links">
+    <a href="?page=matches">Matches</a>
+    <a href="?page=messages" class="active">Messages</a>
+    <a href="?page=events">Events</a>
+    <a href="?page=resources">Resources</a>
+    <a href="?page=profile">Profile</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div id="alertBox"></div>
+
+  <div id="loadingState" class="loading">
+    <div class="spinner"></div>
+    <p>Loading messages...</p>
+  </div>
+
+  <div id="messagesLayout" class="messages-layout hidden">
+    <!-- Inbox -->
+    <div class="inbox-panel">
+      <div class="panel-header">Conversations</div>
+      <div class="inbox-list" id="inboxList">
+        <div style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.9rem;">No conversations yet.<br>Match with someone to start chatting!</div>
+      </div>
+    </div>
+
+    <!-- Conversation -->
+    <div class="conversation-panel" id="conversationPanel" style="display:flex;">
+      <div class="chat-header" id="chatHeader">Select a conversation</div>
+      <div class="chat-body">
+        <div class="chat-window" id="chatWindow">
+          <div style="text-align:center; color:var(--text-muted); padding:40px 20px; font-size:0.9rem;">
+            Select a conversation from the left to start chatting.
+          </div>
+        </div>
+      </div>
+      <div class="chat-footer" id="chatFooter" style="display:none;">
+        <div class="chat-input-row">
+          <textarea id="messageInput" placeholder="Type a message..." rows="1" onkeydown="handleEnter(event)"></textarea>
+          <button class="btn btn-primary" onclick="sendMessage()" style="flex-shrink:0; height:44px;">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var activePartnerId = null;
+var activePartnerName = '';
+var pollInterval = null;
+
+// Load inbox on page load
+google.script.run
+  .withSuccessHandler(function(res) {
+    document.getElementById('loadingState').classList.add('hidden');
+    document.getElementById('messagesLayout').classList.remove('hidden');
+    if (!res.success) return;
+    renderInbox(res.data);
+  })
+  .withFailureHandler(function() { document.getElementById('loadingState').classList.add('hidden'); })
+  .serverCall('getInbox', {});
+
+function renderInbox(inbox) {
+  if (!inbox || inbox.length === 0) return;
+  var html = '';
+  inbox.forEach(function(conv) {
+    html += '<div class="inbox-item' + (conv.unreadCount > 0 ? ' inbox-unread' : '') + '" onclick="openConversation(\'' + conv.partnerId + '\', \'' + esc(conv.partnerName) + '\')">' +
+      '<div class="avatar" style="width:40px;height:40px;font-size:1rem;">' + esc(conv.partnerName).charAt(0) + '</div>' +
+      '<div class="inbox-meta">' +
+      '<div class="inbox-name">' + esc(conv.partnerName) + (conv.unreadCount > 0 ? ' <span class="badge badge-primary">' + conv.unreadCount + '</span>' : '') + '</div>' +
+      '<div class="inbox-preview">' + esc(conv.latestMessage) + '</div>' +
+      '</div>' +
+      (conv.unreadCount > 0 ? '<div class="unread-dot"></div>' : '') +
+      '</div>';
+  });
+  document.getElementById('inboxList').innerHTML = html;
+}
+
+function openConversation(partnerId, partnerName) {
+  activePartnerId = partnerId;
+  activePartnerName = partnerName;
+  document.getElementById('chatHeader').textContent = partnerName;
+  document.getElementById('chatFooter').style.display = '';
+  loadConversation();
+  // Poll every 10 seconds
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(loadConversation, 10000);
+  // Highlight selected
+  document.querySelectorAll('.inbox-item').forEach(function(el) { el.classList.remove('selected'); });
+  event.currentTarget.classList.add('selected');
+}
+
+function loadConversation() {
+  if (!activePartnerId) return;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) return;
+      renderMessages(res.data);
+    })
+    .withFailureHandler(function() {})
+    .serverCall('getConversation', { otherUserId: activePartnerId });
+}
+
+function renderMessages(messages) {
+  var window_ = document.getElementById('chatWindow');
+  var wasAtBottom = window_.scrollTop + window_.clientHeight >= window_.scrollHeight - 20;
+
+  if (!messages || messages.length === 0) {
+    window_.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px 20px;font-size:0.9rem;">No messages yet. Say hello!</div>';
+    return;
+  }
+
+  var html = '';
+  var currentUser = null; // We determine sent vs received by checking senderId
+  messages.forEach(function(m) {
+    var isSent = m.receiverId === activePartnerId; // if receiver is partner, we sent it
+    var time = new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    html += '<div>' +
+      '<div class="message-bubble ' + (isSent ? 'message-sent' : 'message-received') + '">' + esc(m.content) + '</div>' +
+      '<div class="message-time">' + time + '</div>' +
+      '</div>';
+  });
+  window_.innerHTML = html;
+  if (wasAtBottom) window_.scrollTop = window_.scrollHeight;
+}
+
+function sendMessage() {
+  if (!activePartnerId) return;
+  var input = document.getElementById('messageInput');
+  var content = input.value.trim();
+  if (!content) return;
+  input.value = '';
+  input.style.height = '';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) { showAlert(res.error, 'error'); return; }
+      loadConversation();
+    })
+    .withFailureHandler(function(e) { showAlert(e.message, 'error'); })
+    .serverCall('sendMessage', { receiverId: activePartnerId, content: content });
+}
+
+function handleEnter(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+  // Auto-resize textarea
+  var ta = event.target;
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+}
+
+function showAlert(msg, type) {
+  document.getElementById('alertBox').innerHTML = '<div class="alert alert-' + (type==='error'?'error':'success') + '">' + esc(msg) + '</div>';
+  setTimeout(function() { document.getElementById('alertBox').innerHTML = ''; }, 4000);
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resources — FWB Connect</title>
+  <?!= include('styles') ?>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="?page=index">FWB Connect</a>
+  <div class="nav-links">
+    <a href="?page=matches">Matches</a>
+    <a href="?page=messages">Messages</a>
+    <a href="?page=events">Events</a>
+    <a href="?page=resources" class="active">Resources</a>
+    <a href="?page=profile">Profile</a>
+  </div>
+</nav>
+
+<div class="container">
+  <h1 class="page-title">Resources &amp; Education</h1>
+  <p class="page-subtitle">Guides for safe, healthy, and consensual friends-with-benefits arrangements.</p>
+
+  <!-- Category filter -->
+  <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px;">
+    <button class="btn btn-primary btn-sm" onclick="filterCat('')" id="catAll">All</button>
+    <button class="btn btn-secondary btn-sm" onclick="filterCat('Safe Sex')" id="catSafeSex">Safe Sex</button>
+    <button class="btn btn-secondary btn-sm" onclick="filterCat('Communication')" id="catComm">Communication</button>
+    <button class="btn btn-secondary btn-sm" onclick="filterCat('Consent')" id="catConsent">Consent</button>
+    <button class="btn btn-secondary btn-sm" onclick="filterCat('Boundaries')" id="catBoundaries">Boundaries</button>
+    <button class="btn btn-secondary btn-sm" onclick="filterCat('Wellbeing')" id="catWellbeing">Wellbeing</button>
+  </div>
+
+  <div id="resourcesContent" class="loading">
+    <div class="spinner"></div>
+    <p>Loading resources...</p>
+  </div>
+
+  <!-- Static educational content always shown -->
+  <div class="mt-3">
+    <div class="card">
+      <div class="card-title">Quick Reference: Before You Meet</div>
+      <ul style="list-style:none; display:flex; flex-direction:column; gap:12px;">
+        <li style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="font-size:1.3rem;">✅</span>
+          <div><strong>Have the talk first.</strong> Discuss expectations, boundaries, and what you are and aren't comfortable with before any in-person meetup.</div>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="font-size:1.3rem;">🏥</span>
+          <div><strong>Get tested regularly.</strong> STI testing every 3-6 months (or before new partners) is a responsible practice. Many clinics offer free or low-cost confidential testing.</div>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="font-size:1.3rem;">🛡️</span>
+          <div><strong>Use protection.</strong> Condoms and other barrier methods significantly reduce STI transmission and unintended pregnancy risk.</div>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="font-size:1.3rem;">🤝</span>
+          <div><strong>Consent is ongoing.</strong> Consent can be withdrawn at any time. Check in with your partner and respect their decisions without question.</div>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="font-size:1.3rem;">💬</span>
+          <div><strong>Communicate openly.</strong> If feelings change or the arrangement no longer works, have an honest conversation. Honesty prevents hurt feelings down the road.</div>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="font-size:1.3rem;">🧘</span>
+          <div><strong>Check in with yourself.</strong> FWB arrangements can be fulfilling when boundaries are clear. If you start feeling confused or hurt, it's okay to reassess.</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card mt-2">
+      <div class="card-title">External Resources</div>
+      <div class="grid grid-2" style="gap:12px;">
+        <div style="padding:12px; background:var(--bg-input); border-radius:8px;">
+          <div style="font-weight:600; margin-bottom:4px;">Planned Parenthood</div>
+          <p class="text-muted" style="font-size:0.85rem;">STI testing, contraception, and sexual health education.</p>
+          <p style="font-size:0.8rem; color:var(--primary); margin-top:4px;">plannedparenthood.org</p>
+        </div>
+        <div style="padding:12px; background:var(--bg-input); border-radius:8px;">
+          <div style="font-weight:600; margin-bottom:4px;">CDC Sexual Health</div>
+          <p class="text-muted" style="font-size:0.85rem;">Official guidance on STI prevention and treatment.</p>
+          <p style="font-size:0.8rem; color:var(--primary); margin-top:4px;">cdc.gov/sexualhealth</p>
+        </div>
+        <div style="padding:12px; background:var(--bg-input); border-radius:8px;">
+          <div style="font-weight:600; margin-bottom:4px;">RAINN</div>
+          <p class="text-muted" style="font-size:0.85rem;">Support for sexual violence survivors. 24/7 hotline: 1-800-656-4673.</p>
+          <p style="font-size:0.8rem; color:var(--primary); margin-top:4px;">rainn.org</p>
+        </div>
+        <div style="padding:12px; background:var(--bg-input); border-radius:8px;">
+          <div style="font-weight:600; margin-bottom:4px;">gettested.cdc.gov</div>
+          <p class="text-muted" style="font-size:0.85rem;">Find free and confidential STI testing near you.</p>
+          <p style="font-size:0.8rem; color:var(--primary); margin-top:4px;">gettested.cdc.gov</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var allResources = [];
+
+google.script.run
+  .withSuccessHandler(function(res) {
+    document.getElementById('resourcesContent').innerHTML = '';
+    if (!res.success) return;
+    allResources = res.data || [];
+    renderResources(allResources);
+  })
+  .withFailureHandler(function() { document.getElementById('resourcesContent').innerHTML = ''; })
+  .serverCall('getResources', {});
+
+function renderResources(resources) {
+  if (!resources || resources.length === 0) {
+    document.getElementById('resourcesContent').innerHTML = '';
+    return;
+  }
+  var html = '<div class="grid grid-2">';
+  resources.forEach(function(r) {
+    var categoryColors = {
+      'Safe Sex': 'badge-danger',
+      'Communication': 'badge-primary',
+      'Consent': 'badge-success',
+      'Boundaries': 'badge-warning',
+      'Wellbeing': 'badge-primary'
+    };
+    var badgeClass = categoryColors[r.category] || 'badge-primary';
+    html += '<div class="card">' +
+      '<div class="flex-between mb-1">' +
+      '<span class="badge ' + badgeClass + '">' + esc(r.category) + '</span>' +
+      '</div>' +
+      '<div style="font-weight:600; margin-bottom:8px;">' + esc(r.title) + '</div>' +
+      '<p class="text-muted" style="font-size:0.87rem;">' + esc(r.content) + '</p>' +
+      (r.docUrl ? '<a href="' + esc(r.docUrl) + '" target="_blank" class="btn btn-secondary btn-sm mt-2">Read More</a>' : '') +
+      '</div>';
+  });
+  html += '</div>';
+  document.getElementById('resourcesContent').innerHTML = html;
+}
+
+function filterCat(cat) {
+  // Update button styles
+  ['catAll','catSafeSex','catComm','catConsent','catBoundaries','catWellbeing'].forEach(function(id) {
+    var el = document.getElementById(id);
+    el.className = 'btn btn-secondary btn-sm';
+  });
+  var activeBtnId = !cat ? 'catAll' : {
+    'Safe Sex': 'catSafeSex',
+    'Communication': 'catComm',
+    'Consent': 'catConsent',
+    'Boundaries': 'catBoundaries',
+    'Wellbeing': 'catWellbeing'
+  }[cat];
+  if (activeBtnId) document.getElementById(activeBtnId).className = 'btn btn-primary btn-sm';
+
+  var filtered = !cat ? allResources : allResources.filter(function(r) { return r.category === cat; });
+  renderResources(filtered);
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

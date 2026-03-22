@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events — FWB Connect</title>
+  <?!= include('styles') ?>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="?page=index">FWB Connect</a>
+  <div class="nav-links">
+    <a href="?page=matches">Matches</a>
+    <a href="?page=messages">Messages</a>
+    <a href="?page=events" class="active">Events</a>
+    <a href="?page=resources">Resources</a>
+    <a href="?page=profile">Profile</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div id="alertBox"></div>
+
+  <div class="flex-between mb-2">
+    <div>
+      <h1 class="page-title">Community Events</h1>
+      <p class="page-subtitle">Exclusive meetups for members</p>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="showCreateForm()">+ Create Event</button>
+  </div>
+
+  <!-- Create Event Form -->
+  <div id="createEventCard" class="card hidden mb-2">
+    <div class="card-title">Create New Event</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="evTitle">Event Title *</label>
+        <input type="text" id="evTitle" placeholder="e.g. Friday Social Mixer" maxlength="80">
+      </div>
+      <div class="form-group">
+        <label for="evLocation">Location *</label>
+        <input type="text" id="evLocation" placeholder="Venue name or address" maxlength="120">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="evDate">Date &amp; Time *</label>
+        <input type="datetime-local" id="evDate">
+      </div>
+      <div class="form-group">
+        <label for="evMax">Max Attendees</label>
+        <input type="number" id="evMax" value="30" min="2" max="500">
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="evDesc">Description</label>
+      <textarea id="evDesc" placeholder="Tell people what to expect..." maxlength="500"></textarea>
+    </div>
+    <div class="flex gap-1">
+      <button class="btn btn-secondary" onclick="hideCreateForm()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="createEvent()">Create Event</button>
+    </div>
+  </div>
+
+  <!-- Events list -->
+  <div id="eventsContent" class="loading">
+    <div class="spinner"></div>
+    <p>Loading events...</p>
+  </div>
+</div>
+
+<script>
+// Load events on page load
+loadEvents();
+
+function loadEvents() {
+  document.getElementById('eventsContent').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading events...</p></div>';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) {
+        document.getElementById('eventsContent').innerHTML = '<div class="alert alert-error">' + esc(res.error) + '</div>';
+        return;
+      }
+      renderEvents(res.data);
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('eventsContent').innerHTML = '<div class="alert alert-error">' + esc(e.message) + '</div>';
+    })
+    .serverCall('listEvents', {});
+}
+
+function renderEvents(events) {
+  if (!events || events.length === 0) {
+    document.getElementById('eventsContent').innerHTML =
+      '<div class="card text-center" style="padding:40px;">' +
+      '<p class="text-muted">No upcoming events. Be the first to create one!</p>' +
+      '</div>';
+    return;
+  }
+
+  var html = '<div class="grid grid-2">';
+  events.forEach(function(ev) {
+    var date = new Date(ev.date);
+    var dateStr = date.toLocaleDateString([], { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+    var timeStr = date.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    var pct = Math.round((ev.attendeeCount / ev.maxAttendees) * 100);
+    html += '<div class="card">' +
+      '<div class="flex-between mb-1">' +
+      '<span class="badge ' + (ev.isFull ? 'badge-danger' : 'badge-success') + '">' + (ev.isFull ? 'Full' : 'Open') + '</span>' +
+      '<span class="text-muted" style="font-size:0.8rem;">' + ev.attendeeCount + '/' + ev.maxAttendees + ' attending</span>' +
+      '</div>' +
+      '<div class="profile-name" style="font-size:1rem; margin-bottom:4px;">' + esc(ev.title) + '</div>' +
+      '<div class="text-muted" style="font-size:0.85rem; margin-bottom:8px;">' +
+      '📅 ' + dateStr + ' at ' + timeStr + '<br>' +
+      '📍 ' + esc(ev.location) +
+      '</div>' +
+      (ev.description ? '<p style="font-size:0.85rem; margin-bottom:12px;">' + esc(ev.description).slice(0,120) + (ev.description.length>120?'...':'') + '</p>' : '') +
+      '<div class="score-bar mb-2"><div class="score-fill" style="width:' + pct + '%;background:' + (ev.isFull?'var(--danger)':'var(--success)') + ';"></div></div>' +
+      '<button class="btn ' + (ev.isFull ? 'btn-secondary' : 'btn-primary') + ' btn-sm btn-full" onclick="rsvp(\'' + ev.eventId + '\', this)" ' + (ev.isFull ? 'disabled' : '') + '>' +
+      (ev.isFull ? 'Event Full' : 'RSVP') +
+      '</button>' +
+      '</div>';
+  });
+  html += '</div>';
+  document.getElementById('eventsContent').innerHTML = html;
+}
+
+function rsvp(eventId, btn) {
+  btn.disabled = true;
+  btn.textContent = 'RSVPing...';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) { showAlert(res.error, 'error'); btn.disabled = false; btn.textContent = 'RSVP'; return; }
+      showAlert('You\'re registered for this event!', 'success');
+      btn.textContent = 'Attending ✓';
+      btn.className = 'btn btn-secondary btn-sm btn-full';
+    })
+    .withFailureHandler(function(e) { showAlert(e.message, 'error'); btn.disabled = false; btn.textContent = 'RSVP'; })
+    .serverCall('rsvpEvent', { eventId: eventId });
+}
+
+function showCreateForm() { document.getElementById('createEventCard').classList.remove('hidden'); window.scrollTo(0,0); }
+function hideCreateForm() { document.getElementById('createEventCard').classList.add('hidden'); }
+
+function createEvent() {
+  var title = document.getElementById('evTitle').value.trim();
+  var location = document.getElementById('evLocation').value.trim();
+  var date = document.getElementById('evDate').value;
+  var maxAttendees = parseInt(document.getElementById('evMax').value, 10);
+  var description = document.getElementById('evDesc').value.trim();
+
+  if (!title) { showAlert('Event title is required.', 'error'); return; }
+  if (!location) { showAlert('Location is required.', 'error'); return; }
+  if (!date) { showAlert('Date and time is required.', 'error'); return; }
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) { showAlert(res.error, 'error'); return; }
+      showAlert('Event created successfully!', 'success');
+      hideCreateForm();
+      document.getElementById('evTitle').value = '';
+      document.getElementById('evLocation').value = '';
+      document.getElementById('evDate').value = '';
+      document.getElementById('evDesc').value = '';
+      loadEvents();
+    })
+    .withFailureHandler(function(e) { showAlert(e.message, 'error'); })
+    .serverCall('createEvent', { title: title, location: location, date: date, maxAttendees: maxAttendees, description: description });
+}
+
+function showAlert(msg, type) {
+  document.getElementById('alertBox').innerHTML = '<div class="alert alert-' + (type==='error'?'error':'success') + '">' + esc(msg) + '</div>';
+  setTimeout(function() { document.getElementById('alertBox').innerHTML = ''; }, 5000);
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile — FWB Connect</title>
+  <?!= include('styles') ?>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="?page=index">FWB Connect</a>
+  <div class="nav-links">
+    <a href="?page=matches">Matches</a>
+    <a href="?page=messages">Messages</a>
+    <a href="?page=events">Events</a>
+    <a href="?page=resources">Resources</a>
+    <a href="?page=profile" class="active">Profile</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div id="loadingState" class="loading">
+    <div class="spinner"></div>
+    <p>Loading your profile...</p>
+  </div>
+
+  <div id="profileForm" class="hidden">
+    <h1 class="page-title" id="formTitle">Create Your Profile</h1>
+    <p class="page-subtitle">Your email is never shown to other users. Only your display name is visible.</p>
+
+    <div id="alertBox"></div>
+
+    <!-- Step indicator -->
+    <div class="steps">
+      <div class="step active" id="step1Indicator"></div>
+      <div class="step" id="step2Indicator"></div>
+      <div class="step" id="step3Indicator"></div>
+      <div class="step" id="step4Indicator"></div>
+    </div>
+
+    <!-- Step 1: Basic Info -->
+    <div id="step1" class="card">
+      <div class="card-title">Step 1: About You</div>
+
+      <div class="form-group">
+        <label for="displayName">Display Name *</label>
+        <input type="text" id="displayName" placeholder="How you appear to others" maxlength="40">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="age">Age * (must be 18+)</label>
+          <input type="number" id="age" min="18" max="99" placeholder="Your age">
+        </div>
+        <div class="form-group">
+          <label for="location">City / Region *</label>
+          <input type="text" id="location" placeholder="e.g. Chicago, IL" maxlength="60">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="gender">Gender *</label>
+          <select id="gender">
+            <option value="">Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="non-binary">Non-binary</option>
+            <option value="genderfluid">Genderfluid</option>
+            <option value="other">Other / Prefer not to say</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sexualOrientation">Sexual Orientation *</label>
+          <select id="sexualOrientation">
+            <option value="">Select orientation</option>
+            <option value="straight">Straight / Heterosexual</option>
+            <option value="gay">Gay / Lesbian</option>
+            <option value="bisexual">Bisexual</option>
+            <option value="pansexual">Pansexual</option>
+            <option value="queer">Queer</option>
+            <option value="fluid">Fluid</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bio">About Me</label>
+        <textarea id="bio" placeholder="Tell potential partners a bit about yourself..." maxlength="400"></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="nextStep(2)">Continue</button>
+    </div>
+
+    <!-- Step 2: Preferences -->
+    <div id="step2" class="card hidden">
+      <div class="card-title">Step 2: Your Preferences</div>
+
+      <div class="form-group">
+        <label>I'm looking for (select all that apply)</label>
+        <div class="tags" style="flex-direction:column; gap:8px;">
+          <label style="text-transform:none; letter-spacing:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" name="lookingFor" value="casual"> Casual encounters
+          </label>
+          <label style="text-transform:none; letter-spacing:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" name="lookingFor" value="regular"> Regular FWB arrangement
+          </label>
+          <label style="text-transform:none; letter-spacing:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" name="lookingFor" value="ongoing"> Ongoing friends first
+          </label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="ageRangeMin">Partner Age Min</label>
+          <input type="number" id="ageRangeMin" min="18" max="99" placeholder="18">
+        </div>
+        <div class="form-group">
+          <label for="ageRangeMax">Partner Age Max</label>
+          <input type="number" id="ageRangeMax" min="18" max="99" placeholder="99">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Interests (select all that apply)</label>
+        <div id="interestOptions" class="tags">
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="hiking" style="width:auto;"> Hiking</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="music" style="width:auto;"> Music</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="art" style="width:auto;"> Art</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="travel" style="width:auto;"> Travel</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="fitness" style="width:auto;"> Fitness</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="cooking" style="width:auto;"> Cooking</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="gaming" style="width:auto;"> Gaming</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="movies" style="width:auto;"> Movies</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="reading" style="width:auto;"> Reading</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="yoga" style="width:auto;"> Yoga</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="dancing" style="width:auto;"> Dancing</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="photography" style="width:auto;"> Photography</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="sports" style="width:auto;"> Sports</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="concerts" style="width:auto;"> Concerts</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="wine" style="width:auto;"> Wine &amp; Dining</label>
+          <label class="tag" style="cursor:pointer;"><input type="checkbox" name="interests" value="outdoors" style="width:auto;"> Outdoors</label>
+        </div>
+      </div>
+
+      <div class="flex gap-1 mt-2">
+        <button class="btn btn-secondary" onclick="nextStep(1)">Back</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="nextStep(3)">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Boundaries -->
+    <div id="step3" class="card hidden">
+      <div class="card-title">Step 3: Your Boundaries</div>
+      <p class="text-muted mb-2" style="font-size:0.9rem;">
+        Setting clear boundaries helps ensure comfortable and consensual arrangements for everyone.
+      </p>
+
+      <div class="form-group">
+        <label>My boundaries include (select all that apply)</label>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+          <label style="text-transform:none; letter-spacing:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" name="boundaries" value="no-overnight" style="width:auto;"> No overnight stays
+          </label>
+          <label style="text-transform:none; letter-spacing:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" name="boundaries" value="no-exclusivity" style="width:auto;"> Not exclusive (both can see others)
+          </label>
+          <label style="text-transform:none; letter-spacing:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" name="boundaries" value="safe-sex-required" style="width:auto;"> Safe sex required (protection always)
+          </label>
+          <label style="text-transform:none; letter-spacing:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" name="boundaries" value="regular-testing" style="width:auto;"> Both partners commit to regular STI testing
+          </label>
+          <label style="text-transform:none; letter-spacing:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" name="boundaries" value="no-public-displays" style="width:auto;"> No public displays of affection
+          </label>
+          <label style="text-transform:none; letter-spacing:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" name="boundaries" value="meet-first" style="width:auto;"> Meet in public before private meetups
+          </label>
+          <label style="text-transform:none; letter-spacing:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" name="boundaries" value="right-to-stop" style="width:auto;"> Either party can end arrangement at any time
+          </label>
+        </div>
+      </div>
+
+      <div class="flex gap-1 mt-2">
+        <button class="btn btn-secondary" onclick="nextStep(2)">Back</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="nextStep(4)">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Review & Submit -->
+    <div id="step4" class="card hidden">
+      <div class="card-title">Step 4: Review &amp; Save</div>
+      <div id="profilePreview" style="margin-bottom:20px;"></div>
+      <div class="flex gap-1">
+        <button class="btn btn-secondary" onclick="nextStep(3)">Back</button>
+        <button class="btn btn-primary" style="flex:1;" id="submitBtn" onclick="submitProfile()">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Ratings -->
+  <div id="ratingsSection" class="hidden mt-3">
+    <div class="card">
+      <div class="card-title">My Ratings</div>
+      <div id="ratingsContent"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var currentStep = 1;
+var isEditing = false;
+var currentUserId = null;
+
+google.script.run
+  .withSuccessHandler(function(res) {
+    document.getElementById('loadingState').classList.add('hidden');
+    if (!res.success || !res.data.authenticated) {
+      window.location.href = '?page=index';
+      return;
+    }
+    if (res.data.hasProfile) {
+      isEditing = true;
+      currentUserId = res.data.user.userId;
+      document.getElementById('formTitle').textContent = 'Edit My Profile';
+      populateForm(res.data.user);
+      loadMyRatings(currentUserId);
+    }
+    document.getElementById('profileForm').classList.remove('hidden');
+  })
+  .withFailureHandler(function(e) {
+    document.getElementById('loadingState').classList.add('hidden');
+    showAlert('Failed to load profile: ' + e.message, 'error');
+  })
+  .serverCall('getAuthStatus', {});
+
+function populateForm(user) {
+  setValue('displayName', user.displayName);
+  setValue('age', user.age);
+  setValue('location', user.location);
+  setValue('gender', user.gender);
+  setValue('sexualOrientation', user.sexualOrientation);
+  setValue('bio', user.bio);
+  setValue('ageRangeMin', user.ageRangeMin);
+  setValue('ageRangeMax', user.ageRangeMax);
+  checkBoxes('interests', toArr(user.interests));
+  checkBoxes('boundaries', toArr(user.boundaries));
+}
+
+function setValue(id, val) {
+  var el = document.getElementById(id);
+  if (el && val !== undefined && val !== null) el.value = val;
+}
+
+function checkBoxes(name, values) {
+  var boxes = document.querySelectorAll('input[name="' + name + '"]');
+  boxes.forEach(function(b) { b.checked = values.indexOf(b.value) !== -1; });
+}
+
+function toArr(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  try { return JSON.parse(val); } catch(e) { return []; }
+}
+
+function nextStep(step) {
+  if (step === 2 && !validateStep1()) return;
+  document.getElementById('step' + currentStep).classList.add('hidden');
+  document.getElementById('step' + currentStep + 'Indicator').classList.remove('active');
+  document.getElementById('step' + currentStep + 'Indicator').classList.add('done');
+  currentStep = step;
+  document.getElementById('step' + currentStep).classList.remove('hidden');
+  document.getElementById('step' + currentStep + 'Indicator').classList.add('active');
+  if (step === 4) renderPreview();
+  window.scrollTo(0, 0);
+}
+
+function validateStep1() {
+  var name = document.getElementById('displayName').value.trim();
+  var age = parseInt(document.getElementById('age').value, 10);
+  var loc = document.getElementById('location').value.trim();
+  var gender = document.getElementById('gender').value;
+  var orient = document.getElementById('sexualOrientation').value;
+  if (name.length < 2) { showAlert('Display name must be at least 2 characters.', 'error'); return false; }
+  if (isNaN(age) || age < 18) { showAlert('You must be 18 or older.', 'error'); return false; }
+  if (!loc) { showAlert('Location is required.', 'error'); return false; }
+  if (!gender) { showAlert('Please select your gender.', 'error'); return false; }
+  if (!orient) { showAlert('Please select your orientation.', 'error'); return false; }
+  clearAlert();
+  return true;
+}
+
+function renderPreview() {
+  var html = '<div class="profile-card">' +
+    '<div class="avatar">' + document.getElementById('displayName').value.charAt(0).toUpperCase() + '</div>' +
+    '<div class="profile-info">' +
+    '<div class="profile-name">' + esc(document.getElementById('displayName').value) + '</div>' +
+    '<div class="profile-meta">' + esc(document.getElementById('age').value) + ' &bull; ' + esc(document.getElementById('gender').value) + ' &bull; ' + esc(document.getElementById('location').value) + '</div>' +
+    '<div class="profile-meta">' + esc(document.getElementById('sexualOrientation').value) + '</div>' +
+    '</div></div>';
+  if (document.getElementById('bio').value) {
+    html += '<p style="margin-top:12px; font-size:0.9rem;">' + esc(document.getElementById('bio').value) + '</p>';
+  }
+  var interests = getChecked('interests');
+  if (interests.length > 0) {
+    html += '<div class="tags mt-1">' + interests.map(function(i) { return '<span class="tag">' + esc(i) + '</span>'; }).join('') + '</div>';
+  }
+  document.getElementById('profilePreview').innerHTML = html;
+}
+
+function getChecked(name) {
+  return Array.from(document.querySelectorAll('input[name="' + name + '"]:checked')).map(function(b) { return b.value; });
+}
+
+function buildProfileData() {
+  return {
+    displayName: document.getElementById('displayName').value.trim(),
+    age: parseInt(document.getElementById('age').value, 10),
+    location: document.getElementById('location').value.trim(),
+    gender: document.getElementById('gender').value,
+    sexualOrientation: document.getElementById('sexualOrientation').value,
+    bio: document.getElementById('bio').value.trim(),
+    ageRangeMin: parseInt(document.getElementById('ageRangeMin').value, 10) || 18,
+    ageRangeMax: parseInt(document.getElementById('ageRangeMax').value, 10) || 99,
+    interests: getChecked('interests'),
+    lookingFor: getChecked('lookingFor').join(',') || 'casual',
+    boundaries: getChecked('boundaries'),
+    preferences: {},
+    photos: []
+  };
+}
+
+function submitProfile() {
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  var action = isEditing ? 'updateProfile' : 'createProfile';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.textContent = 'Save Profile';
+      if (!res.success) { showAlert(res.error, 'error'); return; }
+      showAlert('Profile saved successfully!', 'success');
+      setTimeout(function() { window.location.href = '?page=index'; }, 1500);
+    })
+    .withFailureHandler(function(e) {
+      btn.disabled = false;
+      btn.textContent = 'Save Profile';
+      showAlert('Error: ' + e.message, 'error');
+    })
+    .serverCall(action, buildProfileData());
+}
+
+function loadMyRatings(userId) {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success || !res.data) return;
+      var data = res.data;
+      if (data.totalRatings === 0) {
+        document.getElementById('ratingsSection').classList.remove('hidden');
+        document.getElementById('ratingsContent').innerHTML = '<p class="text-muted">No ratings yet.</p>';
+        return;
+      }
+      var stars = Math.round(data.averageScore);
+      var html = '<div class="flex-between mb-2"><div><strong>' + data.averageScore + '/5</strong> average <span class="stars">' + '★'.repeat(stars) + '☆'.repeat(5-stars) + '</span></div><span class="text-muted">' + data.totalRatings + ' review' + (data.totalRatings !== 1 ? 's' : '') + '</span></div>';
+      data.ratings.forEach(function(r) {
+        html += '<div style="border-top:1px solid var(--border); padding-top:12px; margin-top:12px;">' +
+          '<div class="flex-between"><span class="stars">' + '★'.repeat(r.score) + '☆'.repeat(5-r.score) + '</span><span class="text-muted" style="font-size:0.8rem;">' + (r.anonymous ? 'Anonymous' : (r.raterName || 'Unknown')) + '</span></div>' +
+          (r.comment ? '<p style="font-size:0.9rem; margin-top:6px;">' + esc(r.comment) + '</p>' : '') +
+          '</div>';
+      });
+      document.getElementById('ratingsContent').innerHTML = html;
+      document.getElementById('ratingsSection').classList.remove('hidden');
+    })
+    .withFailureHandler(function() {})
+    .serverCall('getMyRatings', {});
+}
+
+function showAlert(msg, type) {
+  document.getElementById('alertBox').innerHTML = '<div class="alert alert-' + (type === 'error' ? 'error' : 'success') + '">' + esc(msg) + '</div>';
+  window.scrollTo(0, 0);
+}
+
+function clearAlert() { document.getElementById('alertBox').innerHTML = ''; }
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

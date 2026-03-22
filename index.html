@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FWB Connect</title>
+  <?!= include('styles') ?>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="?page=index">FWB Connect</a>
+  <div class="nav-links" id="navLinks">
+    <a href="?page=matches">Find Matches</a>
+    <a href="?page=messages">Messages</a>
+    <a href="?page=events">Events</a>
+    <a href="?page=resources">Resources</a>
+    <a href="?page=profile" id="profileNav">My Profile</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- Loading state -->
+  <div id="loadingState" class="loading">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <!-- Not authenticated -->
+  <div id="noAuthState" class="hidden text-center" style="padding:60px 20px;">
+    <h1 class="page-title" style="font-size:2.5rem; background:linear-gradient(135deg,#6c63ff,#ff6584); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">FWB Connect</h1>
+    <p class="page-subtitle" style="font-size:1.1rem; max-width:500px; margin:0 auto 32px;">
+      A safe, discreet platform to connect with friends with benefits based on mutual compatibility and shared preferences.
+    </p>
+    <div class="alert alert-info" style="max-width:480px; margin:0 auto 32px;">
+      Sign in with your Google account to get started. Your email is kept private — only your chosen display name is shown to others.
+    </div>
+    <div class="card" style="max-width:480px; margin:0 auto;">
+      <div class="card-title">What you get</div>
+      <ul style="list-style:none; display:flex; flex-direction:column; gap:12px;">
+        <li>🔍 Smart compatibility matching based on your preferences</li>
+        <li>💬 Private messaging with matched partners</li>
+        <li>⭐ Honest review system for accountability</li>
+        <li>📅 Exclusive community events and meetups</li>
+        <li>📚 Safe sex and communication resources</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Has account but no profile -->
+  <div id="noProfileState" class="hidden text-center" style="padding:60px 20px;">
+    <h2 class="page-title">Welcome!</h2>
+    <p class="page-subtitle">You're signed in. Create your profile to start connecting.</p>
+    <a href="?page=profile" class="btn btn-primary" style="font-size:1rem; padding:14px 32px;">
+      Create My Profile
+    </a>
+  </div>
+
+  <!-- Logged in with profile: Dashboard -->
+  <div id="dashboardState" class="hidden">
+    <h1 class="page-title">Welcome back, <span id="userName"></span>!</h1>
+    <p class="page-subtitle">Here's what's happening.</p>
+
+    <div class="grid grid-3">
+      <a href="?page=matches" style="text-decoration:none;">
+        <div class="card text-center" style="cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:2.5rem; margin-bottom:8px;">💞</div>
+          <div class="card-title" style="margin:0;">Find Matches</div>
+          <p class="text-muted" style="font-size:0.85rem; margin-top:4px;">Discover compatible partners</p>
+        </div>
+      </a>
+      <a href="?page=messages" style="text-decoration:none;">
+        <div class="card text-center" style="cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:2.5rem; margin-bottom:8px;">💬</div>
+          <div class="card-title" style="margin:0;">Messages</div>
+          <p class="text-muted" style="font-size:0.85rem; margin-top:4px;" id="unreadBadge">Chat with your matches</p>
+        </div>
+      </a>
+      <a href="?page=events" style="text-decoration:none;">
+        <div class="card text-center" style="cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+          <div style="font-size:2.5rem; margin-bottom:8px;">📅</div>
+          <div class="card-title" style="margin:0;">Events</div>
+          <p class="text-muted" style="font-size:0.85rem; margin-top:4px;">Community meetups</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="mt-3 grid grid-2">
+      <a href="?page=resources" style="text-decoration:none;">
+        <div class="card" style="cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+          <div class="card-title">Resources</div>
+          <p class="text-muted" style="font-size:0.9rem;">Safe sex guides, communication tips, and consent education.</p>
+        </div>
+      </a>
+      <a href="?page=profile" style="text-decoration:none;">
+        <div class="card" style="cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+          <div class="card-title">My Profile</div>
+          <p class="text-muted" style="font-size:0.9rem;">Update your preferences, boundaries, and bio.</p>
+        </div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  google.script.run
+    .withSuccessHandler(function(res) {
+      document.getElementById('loadingState').classList.add('hidden');
+      if (!res.success) {
+        document.getElementById('noAuthState').classList.remove('hidden');
+        return;
+      }
+      var status = res.data;
+      if (!status.authenticated) {
+        document.getElementById('noAuthState').classList.remove('hidden');
+      } else if (!status.hasProfile) {
+        document.getElementById('noProfileState').classList.remove('hidden');
+      } else {
+        document.getElementById('dashboardState').classList.remove('hidden');
+        document.getElementById('userName').textContent = status.user.displayName;
+      }
+    })
+    .withFailureHandler(function() {
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('noAuthState').classList.remove('hidden');
+    })
+    .serverCall('getAuthStatus', {});
+</script>
+
+</body>
+</html>
