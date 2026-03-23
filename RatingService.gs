@@ -24,7 +24,9 @@ function submitRating(rateeId, score, comment, anonymous) {
   comment = comment ? sanitize(comment) : '';
   if (comment.length > 500) throw new Error('Comment too long (max 500 characters).');
 
-  // Prevent duplicate rating for the same match
+  // Prevent duplicate rating for the same match.
+  // Always store the real userId in raterId for deduplication;
+  // the anonymous flag controls whether the identity is shown publicly.
   var existing = getAllRows(SHEET_NAMES.RATINGS).find(function(r) {
     return r.raterId === currentUser.userId && r.rateeId === rateeId;
   });
@@ -32,7 +34,7 @@ function submitRating(rateeId, score, comment, anonymous) {
 
   var rating = {
     ratingId: generateId(),
-    raterId: anonymous ? 'anonymous' : currentUser.userId,
+    raterId: currentUser.userId,
     rateeId: rateeId,
     score: score,
     comment: comment,
@@ -61,7 +63,7 @@ function getRatingsForUser(userId) {
 
   var publicRatings = userRatings.map(function(r) {
     var rater = null;
-    if (!r.anonymous && r.raterId !== 'anonymous') {
+    if (!r.anonymous) {
       var raterUser = findRow(SHEET_NAMES.USERS, 'userId', r.raterId);
       rater = raterUser ? raterUser.displayName : 'Unknown';
     }
