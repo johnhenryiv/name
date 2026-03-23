@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Matches — FWB Connect</title>
+  <?!= include('styles') ?>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="?page=index">FWB Connect</a>
+  <div class="nav-links">
+    <a href="?page=matches" class="active">Matches</a>
+    <a href="?page=messages">Messages</a>
+    <a href="?page=events">Events</a>
+    <a href="?page=resources">Resources</a>
+    <a href="?page=profile">Profile</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div id="alertBox"></div>
+
+  <!-- Tabs -->
+  <div style="display:flex; gap:4px; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:0;">
+    <button class="btn btn-secondary btn-sm" id="tabNewBtn" onclick="showTab('new')" style="border-bottom:2px solid var(--primary); border-radius:8px 8px 0 0;">Discover</button>
+    <button class="btn btn-secondary btn-sm" id="tabPendingBtn" onclick="showTab('pending')">Pending</button>
+    <button class="btn btn-secondary btn-sm" id="tabMyBtn" onclick="showTab('my')">My Matches</button>
+  </div>
+
+  <!-- Discover Tab -->
+  <div id="tabNew">
+    <div class="flex-between mb-2">
+      <div>
+        <h2 class="page-title" style="font-size:1.4rem;">Discover Compatible Partners</h2>
+        <p class="page-subtitle" style="margin-bottom:0;">Based on your preferences and interests</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="generateMatches()">Find Matches</button>
+    </div>
+    <div id="newMatchesContent">
+      <div class="card text-center" style="padding:40px;">
+        <p class="text-muted">Click "Find Matches" to discover compatible partners based on your profile.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Tab -->
+  <div id="tabPending" class="hidden">
+    <h2 class="page-title" style="font-size:1.4rem; margin-bottom:16px;">Pending Requests</h2>
+    <div id="pendingContent" class="loading"><div class="spinner"></div><p>Loading...</p></div>
+  </div>
+
+  <!-- My Matches Tab -->
+  <div id="tabMy" class="hidden">
+    <h2 class="page-title" style="font-size:1.4rem; margin-bottom:16px;">My Matches</h2>
+    <div id="myMatchesContent" class="loading"><div class="spinner"></div><p>Loading...</p></div>
+  </div>
+
+</div>
+
+<!-- Rate Modal -->
+<div id="rateModal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div class="card" style="max-width:400px;width:100%;">
+    <div class="card-title">Rate Your Experience</div>
+    <input type="hidden" id="rateTargetId">
+    <div class="form-group">
+      <label>Score (1-5 stars)</label>
+      <div id="starPicker" style="display:flex;gap:8px;font-size:2rem;cursor:pointer;">
+        <span onclick="setStars(1)">★</span><span onclick="setStars(2)">★</span>
+        <span onclick="setStars(3)">★</span><span onclick="setStars(4)">★</span><span onclick="setStars(5)">★</span>
+      </div>
+      <input type="hidden" id="rateScore" value="0">
+    </div>
+    <div class="form-group">
+      <label>Review (optional)</label>
+      <textarea id="rateComment" placeholder="Share your experience..." maxlength="500"></textarea>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;">
+        <input type="checkbox" id="rateAnon" style="width:auto;"> Post anonymously
+      </label>
+    </div>
+    <div class="flex gap-1">
+      <button class="btn btn-secondary" onclick="closeRateModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="submitRating()">Submit Rating</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var activeTab = 'new';
+
+function showTab(tab) {
+  ['new','pending','my'].forEach(function(t) {
+    document.getElementById('tab' + cap(t)).classList.add('hidden');
+    document.getElementById('tab' + cap(t) + 'Btn').style.borderBottom = '';
+  });
+  document.getElementById('tab' + cap(tab)).classList.remove('hidden');
+  document.getElementById('tab' + cap(tab) + 'Btn').style.borderBottom = '2px solid var(--primary)';
+  activeTab = tab;
+  if (tab === 'pending') loadPending();
+  if (tab === 'my') loadMyMatches();
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function generateMatches() {
+  document.getElementById('newMatchesContent').innerHTML = '<div class="loading"><div class="spinner"></div><p>Finding your matches...</p></div>';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) { showAlert(res.error, 'error'); return; }
+      renderNewMatches(res.data);
+    })
+    .withFailureHandler(function(e) { showAlert(e.message, 'error'); })
+    .serverCall('generateMatches', {});
+}
+
+function renderNewMatches(matches) {
+  if (!matches || matches.length === 0) {
+    document.getElementById('newMatchesContent').innerHTML = '<div class="card text-center" style="padding:40px;"><p class="text-muted">No new candidates found. Check back later!</p></div>';
+    return;
+  }
+  var html = '<div class="grid grid-2">';
+  matches.forEach(function(m) {
+    var c = m.candidate;
+    var interests = toArr(c.interests).slice(0,4);
+    html += '<div class="card">' +
+      '<div class="profile-card" style="border:0;padding:0;margin-bottom:12px;">' +
+      '<div class="avatar">' + esc(c.displayName||'?').charAt(0) + '</div>' +
+      '<div class="profile-info">' +
+      '<div class="profile-name">' + esc(c.displayName) + '</div>' +
+      '<div class="profile-meta">' + esc(c.age) + ' &bull; ' + esc(c.gender) + ' &bull; ' + esc(c.location) + '</div>' +
+      '</div></div>' +
+      '<div class="mb-1"><div class="flex-between" style="font-size:0.85rem;"><span>Compatibility</span><strong>' + m.score + '%</strong></div>' +
+      '<div class="score-bar"><div class="score-fill" style="width:' + m.score + '%"></div></div></div>' +
+      (c.bio ? '<p style="font-size:0.85rem;color:var(--text-muted);margin:8px 0;">' + esc(c.bio).slice(0,100) + (c.bio.length>100?'...':'') + '</p>' : '') +
+      (interests.length ? '<div class="tags mb-2">' + interests.map(function(i) { return '<span class="tag">' + esc(i) + '</span>'; }).join('') + '</div>' : '') +
+      '</div>';
+  });
+  html += '</div>';
+  document.getElementById('newMatchesContent').innerHTML = html;
+  showAlert('Found ' + matches.length + ' compatible matches! Check the "Pending" tab to see requests sent to you.', 'success');
+}
+
+function loadPending() {
+  document.getElementById('pendingContent').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading...</p></div>';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) { document.getElementById('pendingContent').innerHTML = '<div class="alert alert-error">' + esc(res.error) + '</div>'; return; }
+      renderPending(res.data);
+    })
+    .withFailureHandler(function(e) { document.getElementById('pendingContent').innerHTML = '<div class="alert alert-error">' + esc(e.message) + '</div>'; })
+    .serverCall('getPendingMatches', {});
+}
+
+function renderPending(matches) {
+  if (!matches || matches.length === 0) {
+    document.getElementById('pendingContent').innerHTML = '<div class="card text-center" style="padding:40px;"><p class="text-muted">No pending match requests.</p></div>';
+    return;
+  }
+  var html = '<div class="grid grid-2">';
+  matches.forEach(function(m) {
+    var c = m.candidate || {};
+    html += '<div class="card">' +
+      '<div class="profile-card" style="border:0;padding:0;margin-bottom:12px;">' +
+      '<div class="avatar">' + esc(c.displayName||'?').charAt(0) + '</div>' +
+      '<div class="profile-info">' +
+      '<div class="profile-name">' + esc(c.displayName||'Unknown') + '</div>' +
+      '<div class="profile-meta">' + esc(c.age||'') + (c.gender?' &bull; '+esc(c.gender):'') + (c.location?' &bull; '+esc(c.location):'') + '</div>' +
+      '</div></div>' +
+      '<div class="mb-1"><div class="flex-between" style="font-size:0.85rem;"><span>Compatibility</span><strong>' + m.score + '%</strong></div>' +
+      '<div class="score-bar"><div class="score-fill" style="width:' + m.score + '%"></div></div></div>' +
+      '<div class="flex gap-1 mt-2">' +
+      '<button class="btn btn-danger btn-sm" onclick="respond(\'' + m.matchId + '\', false)">Pass</button>' +
+      '<button class="btn btn-success btn-sm" style="flex:1;" onclick="respond(\'' + m.matchId + '\', true)">Accept</button>' +
+      '</div></div>';
+  });
+  html += '</div>';
+  document.getElementById('pendingContent').innerHTML = html;
+}
+
+function respond(matchId, accept) {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) { showAlert(res.error, 'error'); return; }
+      showAlert(accept ? 'Match accepted! You can now message each other.' : 'Match passed.', accept ? 'success' : 'error');
+      loadPending();
+      if (accept) showTab('my');
+    })
+    .withFailureHandler(function(e) { showAlert(e.message, 'error'); })
+    .serverCall('respondToMatch', { matchId: matchId, accept: accept });
+}
+
+function loadMyMatches() {
+  document.getElementById('myMatchesContent').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading...</p></div>';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) { document.getElementById('myMatchesContent').innerHTML = '<div class="alert alert-error">' + esc(res.error) + '</div>'; return; }
+      renderMyMatches(res.data);
+    })
+    .withFailureHandler(function(e) { document.getElementById('myMatchesContent').innerHTML = '<div class="alert alert-error">' + esc(e.message) + '</div>'; })
+    .serverCall('getMyMatches', {});
+}
+
+function renderMyMatches(matches) {
+  if (!matches || matches.length === 0) {
+    document.getElementById('myMatchesContent').innerHTML = '<div class="card text-center" style="padding:40px;"><p class="text-muted">No accepted matches yet. Find some in the Discover tab!</p></div>';
+    return;
+  }
+  var html = '<div class="grid grid-2">';
+  matches.forEach(function(m) {
+    var p = m.partner || {};
+    html += '<div class="card">' +
+      '<div class="profile-card" style="border:0;padding:0;margin-bottom:12px;">' +
+      '<div class="avatar">' + esc(p.displayName||'?').charAt(0) + '</div>' +
+      '<div class="profile-info">' +
+      '<div class="profile-name">' + esc(p.displayName||'Unknown') + '</div>' +
+      '<div class="profile-meta">' + esc(p.location||'') + '</div>' +
+      '</div></div>' +
+      '<div class="flex gap-1 mt-2">' +
+      '<button class="btn btn-secondary btn-sm" onclick="openRateModal(\'' + p.userId + '\')">Rate</button>' +
+      '<a href="?page=messages" class="btn btn-primary btn-sm" style="flex:1; text-align:center;">Message</a>' +
+      '</div></div>';
+  });
+  html += '</div>';
+  document.getElementById('myMatchesContent').innerHTML = html;
+}
+
+// Rating modal
+var selectedStars = 0;
+
+function openRateModal(userId) {
+  document.getElementById('rateTargetId').value = userId;
+  document.getElementById('rateComment').value = '';
+  document.getElementById('rateAnon').checked = false;
+  setStars(0);
+  document.getElementById('rateModal').classList.remove('hidden');
+}
+
+function closeRateModal() { document.getElementById('rateModal').classList.add('hidden'); }
+
+function setStars(n) {
+  selectedStars = n;
+  document.getElementById('rateScore').value = n;
+  var spans = document.getElementById('starPicker').querySelectorAll('span');
+  spans.forEach(function(s, i) { s.style.color = i < n ? '#ffc107' : 'var(--text-muted)'; });
+}
+
+function submitRating() {
+  var rateeId = document.getElementById('rateTargetId').value;
+  var score = parseInt(document.getElementById('rateScore').value, 10);
+  if (!score || score < 1) { showAlert('Please select a star rating.', 'error'); return; }
+  var comment = document.getElementById('rateComment').value;
+  var anon = document.getElementById('rateAnon').checked;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.success) { showAlert(res.error, 'error'); return; }
+      closeRateModal();
+      showAlert('Rating submitted. Thank you!', 'success');
+    })
+    .withFailureHandler(function(e) { showAlert(e.message, 'error'); })
+    .serverCall('submitRating', { rateeId: rateeId, score: score, comment: comment, anonymous: anon });
+}
+
+function showAlert(msg, type) {
+  document.getElementById('alertBox').innerHTML = '<div class="alert alert-' + (type==='error'?'error':'success') + '">' + esc(msg) + '</div>';
+  setTimeout(function() { document.getElementById('alertBox').innerHTML = ''; }, 5000);
+}
+
+function toArr(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  try { return JSON.parse(val); } catch(e) { return []; }
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
