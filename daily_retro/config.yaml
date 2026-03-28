@@ -1,0 +1,40 @@
+# Daily Retrospective Aggregator — Configuration
+# Copy this file to config.local.yaml and fill in your values,
+# OR set environment variables (see .env.example).
+
+activitywatch:
+  base_url: "http://localhost:5600"
+  # Bucket names auto-discovered; override here if needed:
+  # aw_bucket_afk: "aw-watcher-afk_hostname"
+  # aw_bucket_window: "aw-watcher-window_hostname"
+
+google_maps:
+  # Path to your Google Takeout Location History folder.
+  # Export at takeout.google.com — select "Location History (Timeline)"
+  # The folder contains Semantic Location History/<YEAR>/<YEAR_MONTH>.json
+  takeout_path: "~/Downloads/Takeout/Location History/Semantic Location History"
+  # Alternatively, leave blank and set GOOGLE_MAPS_TAKEOUT_PATH env var.
+
+gmail:
+  # OAuth2 credentials file downloaded from Google Cloud Console.
+  credentials_file: "~/.config/daily_retro/gmail_credentials.json"
+  token_file: "~/.config/daily_retro/gmail_token.json"
+  # Max emails to pull per day (summary only, no bodies unless important)
+  max_results: 100
+  # Only count emails from/to these domains as "important" (optional)
+  important_domains: []
+
+screen_time:
+  # macOS Screen Time database (requires Full Disk Access for Terminal)
+  db_path: "~/Library/Application Support/Knowledge/knowledgeC.db"
+  # Minimum minutes to include an app in the summary
+  min_minutes: 1
+
+summary:
+  # Claude model to use for summarisation
+  model: "claude-opus-4-6"
+  # Output file — use {date} placeholder
+  output_dir: "~/Documents/Daily Retrospectives"
+  output_filename: "retro_{date}.md"
+  # Timezone for "today" calculation
+  timezone: "America/Los_Angeles"

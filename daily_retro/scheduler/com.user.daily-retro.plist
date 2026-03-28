@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd plist — runs the daily retrospective every morning at 07:00.
+
+  Install:
+    cp com.user.daily-retro.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.user.daily-retro.plist
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.user.daily-retro.plist
+    rm ~/Library/LaunchAgents/com.user.daily-retro.plist
+
+  Logs:
+    tail -f /tmp/daily-retro.log
+    tail -f /tmp/daily-retro-error.log
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.daily-retro</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <!-- Update this path to match your Python 3 interpreter -->
+        <string>/usr/local/bin/python3</string>
+        <!-- Update this path to match where you cloned the repo -->
+        <string>REPLACE_WITH_FULL_PATH_TO/daily_retro/main.py</string>
+    </array>
+
+    <!-- Run at 07:00 every morning -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>7</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- Load environment variables from the .env file via shell wrapper -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- Add your API key here, or use setup.sh which patches this file -->
+        <key>ANTHROPIC_API_KEY</key>
+        <string>REPLACE_WITH_YOUR_API_KEY</string>
+        <key>HOME</key>
+        <string>/Users/REPLACE_WITH_YOUR_USERNAME</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/daily-retro.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/daily-retro-error.log</string>
+
+    <!-- Retry if Mac was asleep at scheduled time -->
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
