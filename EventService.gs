@@ -73,6 +73,7 @@ function getEventDetails(eventId) {
   if (!event) throw new Error('Event not found.');
 
   var attendees = toArray(event.attendees);
+  var maxAttendees = parseInt(event.maxAttendees, 10) || 50;
   return {
     eventId: event.eventId,
     title: event.title,
@@ -80,9 +81,9 @@ function getEventDetails(eventId) {
     location: event.location,
     date: event.date,
     attendeeCount: attendees.length,
-    maxAttendees: event.maxAttendees,
+    maxAttendees: maxAttendees,
     isAttending: attendees.indexOf(currentUser.userId) !== -1,
-    isFull: attendees.length >= event.maxAttendees,
+    isFull: attendees.length >= maxAttendees,
     createdAt: event.createdAt
   };
 }

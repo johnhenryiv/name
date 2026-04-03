@@ -265,6 +265,9 @@ function checkBoxes(name, values) {
 function toArr(val) {
   if (!val) return [];
   if (Array.isArray(val)) return val;
+  if (typeof val === 'string' && val.indexOf('[') === -1) {
+    return val.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  }
   try { return JSON.parse(val); } catch(e) { return []; }
 }
 

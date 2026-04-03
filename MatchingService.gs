@@ -180,8 +180,10 @@ function computeMatchScore(u1, u2) {
   }
 
   // 5. LookingFor alignment (10 pts)
-  if (u1.lookingFor && u2.lookingFor && u1.lookingFor === u2.lookingFor) {
-    score += 10;
+  if (u1.lookingFor && u2.lookingFor) {
+    var pref1 = u1.lookingFor.toString().split(',').map(function(p) { return p.trim(); });
+    var pref2 = u2.lookingFor.toString().split(',').map(function(p) { return p.trim(); });
+    if (pref1.some(function(p) { return pref2.indexOf(p) !== -1; })) score += 10;
   }
 
   return Math.round(score);

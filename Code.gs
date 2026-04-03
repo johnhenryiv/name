@@ -56,7 +56,9 @@ function getWebAppUrl() {
  */
 function serverCall(action, params) {
   try {
-    requireAuth();
+    if (action !== 'getAuthStatus') {
+      requireAuth();
+    }
     var result = dispatchAction(action, params || {});
     return { success: true, data: result };
   } catch (e) {

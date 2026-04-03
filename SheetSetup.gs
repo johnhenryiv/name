@@ -163,7 +163,7 @@ function updateRow(sheetName, keyColumn, keyValue, updates) {
   if (keyIdx === -1) throw new Error('Column not found: ' + keyColumn);
 
   for (var i = 1; i < data.length; i++) {
-    if (data[i][keyIdx] == keyValue) {
+    if (String(data[i][keyIdx]) === String(keyValue)) {
       Object.keys(updates).forEach(function(key) {
         var colIdx = headers.indexOf(key);
         if (colIdx !== -1) {
@@ -183,7 +183,7 @@ function updateRow(sheetName, keyColumn, keyValue, updates) {
  */
 function findRow(sheetName, keyColumn, keyValue) {
   var rows = getAllRows(sheetName);
-  return rows.find(function(r) { return r[keyColumn] == keyValue; }) || null;
+  return rows.find(function(r) { return String(r[keyColumn]) === String(keyValue); }) || null;
 }
 
 /**

@@ -51,7 +51,7 @@ function getConversation(otherUserId) {
 
   // Mark unread received messages as read
   conversation.forEach(function(m) {
-    if (m.receiverId === currentUser.userId && m.read === false) {
+    if (m.receiverId === currentUser.userId && !m.read) {
       updateRow(SHEET_NAMES.MESSAGES, 'messageId', m.messageId, { read: true });
       m.read = true;
     }
