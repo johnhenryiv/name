@@ -127,6 +127,8 @@ function getAllRows(sheetName) {
     var obj = {};
     headers.forEach(function(header, i) {
       var val = row[i];
+      // Convert Date objects to ISO strings (Sheets auto-parses date cells)
+      if (val instanceof Date) val = val.toISOString();
       // Parse JSON fields
       if (typeof val === 'string' && (val.startsWith('[') || val.startsWith('{'))) {
         try { val = JSON.parse(val); } catch (e) {}
