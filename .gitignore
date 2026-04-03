@@ -1,0 +1,28 @@
+# Clasp
+.clasprc.json
+clasp.json
+
+# Node
+node_modules/
+npm-debug.log
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Google Apps Script
+appsscript.json.bak
+
+# Env
+.env
+.env.local
